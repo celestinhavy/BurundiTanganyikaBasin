@@ -1,3 +1,2 @@
-# LakeTanganyikaBasinBurundi
-Supplementary data supporting the research on land use/cover change and their socio-ecological implications in the Lake Tanganyika Basin, Burundi. 
-The repository provides resources and supporting materials associated with the study.
+# Lake Tanganyika Basin, Burundi
+This repository provides supplementary materials supporting the assesment and predictive modelling of land use/cover change impacts on habitat quality and cultural ecosystem services in the Lake Tanganyika Basin, Burundi.
