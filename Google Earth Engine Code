@@ -1,0 +1,76 @@
+// Parameters
+var years = [2000, 2010, 2020];
+var roiAsset = 'projects/dissertation-499607/assets/studyarea';
+var exportFolder = 'LULC_2000_2010_2020_Raw';
+var exportScale = 30;
+var exportCRS = 'EPSG:32735';
+
+// Original class values
+var forestValues    = ee.List.sequence(27, 48);
+var rangelandValues = ee.List.sequence(0, 26);
+var wetlandValues   = ee.List.sequence(100, 148);
+var waterValues     = ee.List.sequence(200, 207).cat(ee.List([254]));
+var croplandValues  = ee.List([244]);
+var builtupValues   = ee.List([250]);
+
+// Targeted class names and color palette
+var classNames = ['Forest', 'Rangeland', 'Cropland', 'Wetland', 'Water', 'Built-up'];
+var palette = ['#065106','#A6F040','#F3E537','#00CED1','#1555E4','#FF1000'];
+
+var fromList = forestValues
+    .cat(rangelandValues)
+    .cat(croplandValues)
+    .cat(wetlandValues)
+    .cat(waterValues)
+    .cat(builtupValues);
+
+var toList = ee.List.repeat(0, forestValues.length())
+        .cat(ee.List.repeat(1, rangelandValues.length()))
+        .cat(ee.List.repeat(2, croplandValues.length()))
+        .cat(ee.List.repeat(3, wetlandValues.length()))
+        .cat(ee.List.repeat(4, waterValues.length()))
+        .cat(ee.List.repeat(5, builtupValues.length()));
+
+// Study area definition
+var roi = ee.FeatureCollection(roiAsset).geometry();
+Map.centerObject(roi, 8);
+
+// Reclassification
+function reclassifyAndClip(year) {
+  return ee.Image('projects/glad/GLCLU2020/v2/LCLUC_' + year)
+    .select('b1')
+    .remap({from: fromList, to: toList})
+    .rename('lulc')
+    .clip(roi);
+}
+
+// Visualization and export
+var visParams = {min:0, max:5, palette:palette};
+years.forEach(function(year) {
+  var img = reclassifyAndClip(year);
+  Map.addLayer(img, visParams, 'LULC ' + year);
+  Export.image.toDrive({
+    image: img,
+    description: 'LULC_' + year,
+    folder: exportFolder,
+    fileNamePrefix: 'LULC_' + year,
+    region: roi,
+    scale: exportScale,
+    crs: exportCRS,
+    maxPixels: 1e13
+  });
+});
+
+var legend = ui.Panel({style: {position:'bottom-left', padding:'8px 15px'}});
+    legend.add(ui.Label({value:'Legend', style:{fontWeight:'bold', fontSize:'14px', margin:'0 0 6px 0'}}));
+    for (var i=0; i<classNames.length; i++) {legend.add(ui.Panel([
+           ui.Label({style: {backgroundColor:palette[i], padding:'8px', margin:'0 0 4px 0'}}),
+           ui.Label({value:classNames[i], style:{margin:'0 0 4px 6px'}})], 
+           ui.Panel.Layout.Flow('horizontal')));
+}
+Map.add(legend);
+
+print("Data source:",
+ui.Label(" https://glad.umd.edu/dataset/GLCLUC2020",{},
+"https://glad.umd.edu/dataset/GLCLUC2020"));
+print('Download output rasters from "Tasks"');
